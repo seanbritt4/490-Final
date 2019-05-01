@@ -93,7 +93,7 @@ def initResources(tilemap):
     #initilize starting point
     curX = 0
     curY = 0
-    tilemap[curX][curY].resources = round(random.uniform(0.0, 0.15), 2)
+    tilemap[curX][curY].resources = round(random.uniform(0.0, 0.05), 2)
     r = tilemap[curX][curY].resources
     tilemap[curX][curY].color = (0, 255*r, 0)
     curY += 1  
@@ -202,6 +202,42 @@ def growResourcesNearWater(tilemap):
                         tilemap[x][y].color = (0, 255*r, 0)
 
 
+def updateResources():
+        for column in range(MAPWIDTH):
+            for row in range(MAPHEIGHT):
+                newresources = 0
+                #left
+                if column > 0:
+                    newresources += tilemap[column-1][row].resources
+                else:
+                    newresources += tilemap[MAPWIDTH-1][row].resources
+
+                #right
+                if column < MAPWIDTH-1:
+                    newresources += tilemap[column+1][row].resources
+                else:
+                    newresources += tilemap[0][row].resources
+
+                #down
+                if row > 0:
+                    newresources += tilemap[column][row-1].resources
+                else:
+                    newresources += tilemap[column][MAPHEIGHT-1].resources
+
+                #up
+                if row < MAPHEIGHT-1:
+                    newresources += tilemap[column][row+1].resources
+                else:
+                    newresources += tilemap[column][0].resources
+
+                newresources /= 128.0
+                if column == 0 and row == 0:
+                    print newresources
+                newresources += tilemap[column][row].resources
+                if newresources < 1 and tilemap[column][row].tile_type != 'water':
+                    tilemap[column][row].resources = newresources
+                    tilemap[column][row].color = (0, 255*newresources, 0)
+
 
 
 def main():
@@ -269,7 +305,9 @@ def main():
 | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ |
 |___/\__/\___/\__/\___|___/\__/\___/\__/\___|___/\__/\___/\__/\___|
     '''
+    i = 0
     while True:
+        #exit if 'x' is pressed or 'esc' key is pressed
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
@@ -279,8 +317,12 @@ def main():
             sys.exit()
 
         #sleep for half a second, change this later when we invent time
-        time.sleep(0.5) 
- 
+#        time.sleep(0.5) 
+
+        updateResources()
+        print i
+        i += 1
+        #draw map
         for column in range(MAPWIDTH):
             for row in range(MAPHEIGHT):
                 pygame.draw.rect(DISPLAYSURF, tilemap[column][row].color, (column*TILESIZE, row*TILESIZE, TILESIZE, TILESIZE))
