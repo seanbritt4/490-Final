@@ -243,8 +243,12 @@ def updateResources():
                     
                     if newresources < 1:
                         tilemap[column][row].resources = newresources
-                        if tilemap[column][row].tile_type != 'occupied':
-                            tilemap[column][row].color = (0, 255*newresources, 0)
+                    t = tilemap[column][row]
+                    t.resources = t.resources - t.consumption_rate
+                    t.growth_rate = (t.consumption_rate / 5.0) - (t.pop/1.5)
+                    t.pop = t.pop + t.growth_rate
+                    tilemap[column][row].color = (t.civColor[0]*t.pop, t.civColor[1]*t.pop, t.civColor[2]*t.pop)
+                    print column, row, t.growth_rate, t.pop, t.resources
 
 
 def mouseHoverOver(font, DISPLAYSURF):
@@ -304,6 +308,7 @@ def splitPopulation(x, y):
                 tilemap[x][y].color = (newColor[0]*p, newColor[1]*p, newColor[2]*p)
                 child = tilemap[x+dirX][y+dirY]
                 parent = tilemap[x][y]
+                print "Split", x, y
                 break 
 
 def printTilemap(t):
@@ -373,11 +378,11 @@ def main():
             #for testing
             occ = Occ_Tile()
             occ.resources = tilemap[50][50].resources
-            occ.pop = 0.8
-            occ.consumption_rate = 0.01
-            occ.growth_rate = 0.01
+            occ.pop = 1.0
+            occ.consumption_rate = 0.1
+            occ.growth_rate = 0.1
             occ.color = (255*occ.pop, 0*occ.pop, 0*occ.pop)
-            occ.civColor = (255, 0, 0)
+            occ.civColor = (0, 255, 255)
             tilemap[50][50] = copy.copy(occ)
 
 
@@ -405,8 +410,6 @@ def main():
         #print i
         i += 1
 
-        if(i > 5):
-            splitPopulation(50, 50)
 
         #draw map
         for column in range(MAPWIDTH):
