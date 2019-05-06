@@ -1,4 +1,4 @@
-import pygame, sys, time, random, math
+import pygame, sys, time, random, math, copy
 from pygame.locals import *
 from tiles import *
 
@@ -263,47 +263,48 @@ def splitPopulation(x, y):
     tried = [0, 0, 0, 0]
     dirX = 0
     dirY = 0
-    for w in range(4):     
-        success = False
-        while(success == False):
-            if(tried[0] == 1 and tried[1] == 1 and tried[2] == 1 and tried[3] == 1):
-                break
-            direction = random.randint(0, 3)
-            if(tried[direction] == 0):
-                tried[direction] = 1
-                success = True
-                if(direction == 0):
-                    dirY = 1
-                    dirX = 0
-                if(direction == 1):
-                    dirX = 1
-                    dirY = 0
-                if(direction == 2):
-                    dirY = -1
-                    dirX = 0
-                if(direction == 3):
-                    dirX = -1
-                    dirY = 0
-        if(tilemap[x+dirX][y+dirY].tile_type == 'ground'):
-            newTile = Occ_Tile()
-            newTile.resources = tilemap[x+dirX][y+dirY].resources
-            newTile.pop = tilemap[x][y].pop / 2.0
-            newColor = tilemap[x][y].civColor
-            newTile.color = (newColor[0]*newTile.pop, newColor[1]*newTile.pop, newColor[2]*newTile.pop)
-            newTile.civColor = tilemap[x][y].civColor
-            newTile.consumption_rate = tilemap[x][y].consumption_rate / 2.0
-            newTile.growth_rate = tilemap[x][y].growth_rate / 2.0
-            
-            tilemap[x+dirX][y+dirY] = newTile
-            
-            tilemap[x][y].pop /= 2.0
-            tilemap[x][y].consumption_rate /= 2.0
-            tilemap[x][y].growth_rate /= 2.0
-            p = tilemap[x][y].pop
-            tilemap[x][y].color = (newColor[0]*p, newColor[1]*p, newColor[2]*p)
-            child = tilemap[x+dirX][y+dirY]
-            parent = tilemap[x][y]
-            break 
+    if(tilemap[x][y].tile_type == 'occupied'):
+        for w in range(4):     
+            success = False
+            while(success == False):
+                if(tried[0] == 1 and tried[1] == 1 and tried[2] == 1 and tried[3] == 1):
+                    break
+                direction = random.randint(0, 3)
+                if(tried[direction] == 0):
+                    tried[direction] = 1
+                    success = True
+                    if(direction == 0):
+                        dirY = 1
+                        dirX = 0
+                    if(direction == 1):
+                        dirX = 1
+                        dirY = 0
+                    if(direction == 2):
+                        dirY = -1
+                        dirX = 0
+                    if(direction == 3):
+                        dirX = -1
+                        dirY = 0
+            if(tilemap[x+dirX][y+dirY].tile_type == 'ground'):
+                newTile = Occ_Tile()
+                newTile.resources = tilemap[x+dirX][y+dirY].resources
+                newTile.pop = tilemap[x][y].pop / 2.0
+                newColor = tilemap[x][y].civColor
+                newTile.color = (newColor[0]*newTile.pop, newColor[1]*newTile.pop, newColor[2]*newTile.pop)
+                newTile.civColor = tilemap[x][y].civColor
+                newTile.consumption_rate = tilemap[x][y].consumption_rate / 2.0
+                newTile.growth_rate = tilemap[x][y].growth_rate / 2.0
+                
+                tilemap[x+dirX][y+dirY] = newTile
+                
+                tilemap[x][y].pop /= 2.0
+                tilemap[x][y].consumption_rate /= 2.0
+                tilemap[x][y].growth_rate /= 2.0
+                p = tilemap[x][y].pop
+                tilemap[x][y].color = (newColor[0]*p, newColor[1]*p, newColor[2]*p)
+                child = tilemap[x+dirX][y+dirY]
+                parent = tilemap[x][y]
+                break 
 
 def printTilemap(t):
     for y in range(MAPHEIGHT):
@@ -363,20 +364,12 @@ def main():
             initWater(tilemap)
             growResourcesNearWater(tilemap)
 
-        #save the tilemap for later iterations (May not work??)
+        #save the tilemap for later iterations 
         if(pygame.key.get_pressed()[pygame.K_RETURN] != 0):
             reinit = 1
-            for y in range(MAPHEIGHT):
-                for x in range(MAPWIDTH):
-                    tilemapSave[x][y] = tilemap[x][y]
-                    tilemapSave[x][y].tile_type = tilemap[x][y].tile_type
-                    tilemapSave[x][y].resources = tilemap[x][y].resources
-                    tilemapSave[x][y].color = tilemap[x][y].color
-                    tilemapSave[x][y].pop = tilemap[x][y].pop
-                    tilemapSave[x][y].consumption_rate = tilemap[x][y].consumption_rate
-                    tilemapSave[x][y].growth_rate = tilemap[x][y].growth_rate
-                    tilemapSave[x][y].civColor = tilemap[x][y].civColor
-
+            tilemapSave = copy.deepcopy(tilemap)
+                    
+                    
             #for testing
             occ = Occ_Tile()
             occ.resources = tilemap[50][50].resources
@@ -385,7 +378,7 @@ def main():
             occ.growth_rate = 0.01
             occ.color = (255*occ.pop, 0*occ.pop, 0*occ.pop)
             occ.civColor = (255, 0, 0)
-            tilemap[50][50] = occ
+            tilemap[50][50] = copy.copy(occ)
 
 
     '''
@@ -402,13 +395,10 @@ def main():
 | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ |
 |___/\__/\___/\__/\___|___/\__/\___/\__/\___|___/\__/\___/\__/\___|
     '''
-    printTilemap(tilemap)
-    print
-    printTilemap(tilemapSave)
     i = 0
     while True:
 
-        #sleep for half a second, change this later when we invent time
+        #sleep for half a second, change this later 
         time.sleep(1) 
 
         updateResources()
@@ -435,20 +425,9 @@ def main():
             pygame.quit()
             sys.exit()
 
-        #reset the map if r is pressed (DOES NOT WORK..yet)
+        #reset the map if r is pressed 
         if(pygame.key.get_pressed()[pygame.K_r] != 0):
-            for y in range(MAPHEIGHT):
-                for x in range(MAPWIDTH):
-                    tilemap[x][y] = tilemapSave[x][y]
-                    tilemap[x][y].tile_type = tilemapSave[x][y].tile_type
-                    tilemap[x][y].resources = tilemapSave[x][y].resources
-                    tilemap[x][y].pop = tilemapSave[x][y].pop
-                    tilemap[x][y].consumption_rate = tilemapSave[x][y].consumption_rate
-                    tilemap[x][y].growth_rate = tilemapSave[x][y].growth_rate
-                    tilemap[x][y].color = tilemapSave[x][y].color
-                    tilemap[x][y].civColor = tilemapSave[x][y].civColor
-                    if tilemap[x][y].tile_type == 'occupied':
-                        print x, y
+            tilemap = copy.deepcopy(tilemapSave)
 
         #display the resources of a clicked-tile on the UI
         DISPLAYSURF.blit(textsurface,(0,0))
