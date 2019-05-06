@@ -1,7 +1,7 @@
 import random
 
 class Tile():
-    resources = 999
+    resources = 0 
     def __init__(self):
         self.tile_type = 'tile'
         self.color = (0, 0, 0)
@@ -15,6 +15,11 @@ class Ground_Tile(Tile):
         self.tile_type = 'ground'
         self.resources = round(random.uniform(0.0, 0.99), 2)
         self.color = (255.0*self.resources, 255.0*self.resources, 255.0*self.resources)
+        self.pop = 0
+        self.consumption_rate = 0
+        self.growth_rate = 0
+        self.color = (0, 0, 0)
+        self.civColor = (0, 0, 0)
 
     def print_color(self):
         print self.color, " ", self.resources
@@ -27,6 +32,7 @@ class Occ_Tile(Ground_Tile):
         self.consumption_rate = round(random.uniform(0.25, 0.75), 2)
         self.growth_rate = round(random.uniform(0.25, 0.75), 2)
         self.color = (0, 0, 0) #must be set from framework
+        self.civColor = (0, 0, 0) #color of their civilization
     
     def print_occ(self):
         print self.tile_type
@@ -42,8 +48,12 @@ class Occ_Tile(Ground_Tile):
 class Water_Tile(Tile):
     def __init__(self):
         self.tile_type = 'water'
-        self.amount = 1.0
         self.color = (0,0,255)
+        self.resources = 0
+        self.pop = 0
+        self.consumption_rate = 0
+        self.growth_rate = 0
+        self.civColor = (0, 0, 0)
         
         
 def main():
