@@ -1,5 +1,6 @@
-import pygame, sys, time, random, math, copy
+import pygame, sys, time, random, math, copy, cluster
 from pygame.locals import *
+import numpy
 from tiles import *
 
 '''
@@ -13,16 +14,10 @@ CYAN    - (0, 255, 255)
 GREY    - (255, 255, 255)
 '''
 
-
 #map dimensions
 TILESIZE = 5
 MAPWIDTH = 250
 MAPHEIGHT = 100
-
-#RESOURCE_MODIFIER = 0.1
-#WATER_PASS_AMOUNT = 3
-#WATER_MODIFIER = 0.01
-#NEAR_WATER_GROWTH = 1.4
 
 RESOURCE_MODIFIER = 0.1
 WATER_PASS_AMOUNT = 3
@@ -39,11 +34,6 @@ pygame.font.init()
 font = pygame.font.SysFont('Arial', 30)
 textsurface = font.render(' ', False, (255,255,255))
 
-'''
-Ignore everything you see until you get to the game loop, this code is awful
-and should not be looked at by anyone, by tommorow I will have mostly forgotten
-what it does.
-'''
 
 def fixMatrix(matrix):
     newMatrix = [[0 for y in range(MAPHEIGHT)] for x in range(MAPWIDTH)]
@@ -53,7 +43,6 @@ def fixMatrix(matrix):
 
     global tilemap
     tilemap = newMatrix
-
 
 def initWater(tilemap):
     startingNum = random.randint(1, 3)
@@ -102,7 +91,7 @@ def initResources(tilemap):
     tilemap[curX][curY].resources = round(random.uniform(0.0, 0.05), 2)
     r = tilemap[curX][curY].resources
     tilemap[curX][curY].color = (0, 255*r, 0)
-    curY += 1  
+    curY += 1
     while(curX < MAPWIDTH):
         while(curY < MAPHEIGHT):
             #determine average resources around tile
@@ -119,7 +108,7 @@ def initResources(tilemap):
             else: #---base case
                 avgRes = tilemap[curX-1][curY+1].resources + tilemap[curX-1][curY].resources + tilemap[curX-1][curY-1].resources
                 avgRes /= 3.0
-            
+
             #now we have average resources around the tile (or close to it)
             tilemap[curX][curY].resources = avgRes + round(random.uniform(RESOURCE_MODIFIER*-1, RESOURCE_MODIFIER), 2)
             if(tilemap[curX][curY].resources > 1):
@@ -128,9 +117,9 @@ def initResources(tilemap):
                 tilemap[curX][curY].resources = 0
             r = tilemap[curX][curY].resources
             tilemap[curX][curY].color = (0, 255.0*r, 0)
-            
+
             curY += 1
-            
+
         curY = 0
         curX += 1
 
@@ -207,7 +196,6 @@ def growResourcesNearWater(tilemap):
                         r = tilemap[x][y].resources
                         tilemap[x][y].color = (0, 255*r, 0)
 
-
 #if tile is occupied or next to an occupied tile, grow the resource amount
 def updateResources():
         for column in range(MAPWIDTH):
@@ -238,22 +226,24 @@ def updateResources():
                     else:
                         newresources += tilemap[column][0].resources
 
-                    newresources /= 128.0
+                    newresources /= 16.0
                     newresources += tilemap[column][row].resources
-                    
-                    if newresources < 1:
+
+                    if newresources < 1 and newresources > 0:
                         tilemap[column][row].resources = newresources
+
                     t = tilemap[column][row]
                     t.resources = t.resources - t.consumption_rate
-                    t.growth_rate = (t.consumption_rate / 5.0) - (t.pop/1.5)
+                    t.growth_rate = (t.consumption_rate * 1.5) - (t.pop/16.0)
                     t.pop = t.pop + t.growth_rate
+                    if t.pop > 1.0:
+                        t.pop = 1.0
                     tilemap[column][row].color = (t.civColor[0]*t.pop, t.civColor[1]*t.pop, t.civColor[2]*t.pop)
                     print column, row, t.growth_rate, t.pop, t.resources
 
-
 def mouseHoverOver(font, DISPLAYSURF):
-    global textsurface
     textsurface = font.render(' ', False, (255,255,255))
+    global textsurface
     for y in range(MAPHEIGHT):
         for x in range(MAPWIDTH):
             if pygame.mouse.get_pos()[0] >= x*TILESIZE and pygame.mouse.get_pos()[0] < (x+1)*TILESIZE:
@@ -261,14 +251,14 @@ def mouseHoverOver(font, DISPLAYSURF):
                     textsurface = font.render(str(round(tilemap[x][y].resources, 2)), False, (255,255,255))
     return textsurface
 
-
+'''move to Cluster?'''
 def splitPopulation(x, y):
     global tilemap
     tried = [0, 0, 0, 0]
     dirX = 0
     dirY = 0
     if(tilemap[x][y].tile_type == 'occupied'):
-        for w in range(4):     
+        for w in range(4):
             success = False
             while(success == False):
                 if(tried[0] == 1 and tried[1] == 1 and tried[2] == 1 and tried[3] == 1):
@@ -290,7 +280,7 @@ def splitPopulation(x, y):
                         dirX = -1
                         dirY = 0
             if(tilemap[x+dirX][y+dirY].tile_type == 'ground'):
-                newTile = Occ_Tile()
+                newTile = Cluster.Occ_Tile()
                 newTile.resources = tilemap[x+dirX][y+dirY].resources
                 newTile.pop = tilemap[x][y].pop / 2.0
                 newColor = tilemap[x][y].civColor
@@ -298,9 +288,9 @@ def splitPopulation(x, y):
                 newTile.civColor = tilemap[x][y].civColor
                 newTile.consumption_rate = tilemap[x][y].consumption_rate / 2.0
                 newTile.growth_rate = tilemap[x][y].growth_rate / 2.0
-                
+
                 tilemap[x+dirX][y+dirY] = newTile
-                
+
                 tilemap[x][y].pop /= 2.0
                 tilemap[x][y].consumption_rate /= 2.0
                 tilemap[x][y].growth_rate /= 2.0
@@ -309,7 +299,7 @@ def splitPopulation(x, y):
                 child = tilemap[x+dirX][y+dirY]
                 parent = tilemap[x][y]
                 print "Split", x, y
-                break 
+                break
 
 def printTilemap(t):
     for y in range(MAPHEIGHT):
@@ -326,8 +316,6 @@ def main():
     global textsurface
     global font
 
-    #initialize the font
-
     #initialize tilemap
     for y in range(MAPHEIGHT):
         for x in range(MAPWIDTH):
@@ -343,23 +331,21 @@ def main():
     pygame.display.set_caption("Civilization V: Ultimate Edition")
     DISPLAYSURF = pygame.display.set_mode((MAPWIDTH*TILESIZE, MAPHEIGHT*TILESIZE))
 
-
     #allow map to be reinitialized with the 'r' key, hit enter to start and 'lock' the map
     tilemapSave = tilemap
     reinit = 0
     while(reinit == 0):
-
         for column in range(MAPWIDTH):
             for row in range(MAPHEIGHT):
                 pygame.draw.rect(DISPLAYSURF, tilemap[column][row].color, (column*TILESIZE, row*TILESIZE, TILESIZE, TILESIZE))
 
         pygame.display.update()
-        
+
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
- 
+
         if(pygame.key.get_pressed()[pygame.K_r] != 0):
             for y in range(MAPHEIGHT):
                 for x in range(MAPWIDTH):
@@ -369,17 +355,19 @@ def main():
             initWater(tilemap)
             growResourcesNearWater(tilemap)
 
-        #save the tilemap for later iterations 
+        #save the tilemap for later iterations
         if(pygame.key.get_pressed()[pygame.K_RETURN] != 0):
+
             reinit = 1
             tilemapSave = copy.deepcopy(tilemap)
-                    
-                    
+
+
             #for testing
-            occ = Occ_Tile()
+            occ = cluster.Occ_Tile()
+            occ2 = cluster.Occ_Tile()
             occ.resources = tilemap[50][50].resources
-            occ.pop = 1.0
-            occ.consumption_rate = 0.1
+            occ.pop = 0.5
+            occ.consumption_rate = 0.07
             occ.growth_rate = 0.1
             occ.color = (255*occ.pop, 0*occ.pop, 0*occ.pop)
             occ.civColor = (0, 255, 255)
@@ -390,8 +378,8 @@ def main():
 |~~~\/~~\/~~~\/~~\/~~~|~~~\/~~\/~~~\/~~\/~~~|~~~\/~~\/~~~\/~~\/~~~|
 | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ |
 | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ |
- \ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/ 
- /\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \ 
+ \ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/
+ /\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \
 | /\/ /\___|___/\/ /\___/\/ /\___|___/\/ /\___/\/ /\___|___/\/ /\ |
 | \/ /\/   |   \/ /\/   \/ /\/   |   \/ /\/   \/ /\/   |   \/ /\/ |
  \ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/
@@ -400,42 +388,50 @@ def main():
 | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ |
 |___/\__/\___/\__/\___|___/\__/\___/\__/\___|___/\__/\___/\__/\___|
     '''
-    i = 0
-    while True:
 
-        #sleep for half a second, change this later 
-        time.sleep(1) 
+    generations = 0
+    max_time_steps = 200 #change as needed
 
-        updateResources()
-        #print i
-        i += 1
+    while True:     #tracks generations
+        timestep = 0
+
+        #tracks timesteps in each generation
+        for timestep in range(0, max_time_steps):
+            # time.sleep(1)
+            time.sleep(0.5)
 
 
-        #draw map
-        for column in range(MAPWIDTH):
-            for row in range(MAPHEIGHT):
-                pygame.draw.rect(DISPLAYSURF, tilemap[column][row].color, (column*TILESIZE, row*TILESIZE, TILESIZE, TILESIZE))
+            updateResources()
+            #print i
+            # timetep += 1
 
-        #exit if 'x' is pressed or 'esc' key is pressed
-        for event in pygame.event.get():
-            if event.type == QUIT:
+            #draw map
+            for column in range(MAPWIDTH):
+                for row in range(MAPHEIGHT):
+                    pygame.draw.rect(DISPLAYSURF, tilemap[column][row].color, (column*TILESIZE, row*TILESIZE, TILESIZE, TILESIZE))
+
+            #exit if 'x' is pressed or 'esc' key is pressed
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    textsurface = mouseHoverOver(font, DISPLAYSURF)
+
+            if(pygame.key.get_pressed()[pygame.K_ESCAPE] != 0):
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                textsurface = mouseHoverOver(font, DISPLAYSURF)
 
-        if(pygame.key.get_pressed()[pygame.K_ESCAPE] != 0):
-            pygame.quit()
-            sys.exit()
+            #reset the map if r is pressed
+            if(pygame.key.get_pressed()[pygame.K_r] != 0):
+                tilemap = copy.deepcopy(tilemapSave)
 
-        #reset the map if r is pressed 
-        if(pygame.key.get_pressed()[pygame.K_r] != 0):
-            tilemap = copy.deepcopy(tilemapSave)
+            #display the resources of a clicked-tile on the UI
+            DISPLAYSURF.blit(textsurface,(0,0))
 
-        #display the resources of a clicked-tile on the UI
-        DISPLAYSURF.blit(textsurface,(0,0))
-       
-        pygame.display.update()
+            pygame.display.update()
+
+
 
 if __name__ == "__main__":
     main()
