@@ -11,6 +11,7 @@ class Cluster():
         self.civColor = (0, 0, 0) #color of their civilization
         self.alive = True
         self.rounds_alive = 0
+        self.resource_growth_rate = 0
 
         self.X = [self.resourcesself, self.pop, self.consumption_rate, self.growth_rate]
 
@@ -23,6 +24,14 @@ class Cluster():
 class Occ_Tile(Cluster, tiles.Ground_Tile):
     def __init__(self):
         self.tile_type = 'occupied'
+        self.color = (255, 0, 0)
+        self.resources = 0
+        self.pop = 0
+        self.consumption_rate = 0
+        self.growth_rate = 0
+        self.civColor = (0, 0, 0)
+        self.alive = True
+        self.resource_growth_rate = 0
 
     def print_occ(self):
         print self.tile_type
