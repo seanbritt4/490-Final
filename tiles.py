@@ -19,11 +19,11 @@ class Ground_Tile(Tile):
         self.consumption_rate = 0
         self.growth_rate = 0
         self.color = (0, 0, 0)
-        self.civColor = (0, 0, 0) 
+        self.col_color = (0, 0, 0)
         self.alive = True #Set them alive initially, because it's inconsequential, and saves time :)
         self.resource_growth_rate = 0
 
-   def print_color(self):
+    def print_color(self):
         print self.color, " ", self.resources
 
 class Water_Tile(Tile):
@@ -34,8 +34,6 @@ class Water_Tile(Tile):
         self.pop = 0
         self.consumption_rate = 0
         self.growth_rate = 0
-        self.civColor = (0, 0, 0)
-        self.alive = True 
+        self.col_color = (0, 0, 0)
+        self.alive = True
         self.resource_growth_rate = 0
-
-

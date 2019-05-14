@@ -1,0 +1,7 @@
+known to-dos:
+  -finish split
+  -confirm alive status
+  -rework consumption?
+  -add possibility for second parent?
+  DONE -finish fittest, genchildren, ect.
+  DONE -add flag to colony generation in main()

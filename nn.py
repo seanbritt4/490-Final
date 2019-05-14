@@ -1,4 +1,5 @@
 import numpy as np
+import random as r
 '''
 cleaned up neural net. TODO: FIX COMMENTS & MAKE THEM RELEVANT
 '''
@@ -18,6 +19,7 @@ class Neural_Network(object):
     self.W4 = np.random.randn(self.hiddenSize3, self.outputSize) # (3x1) weight matrix from hidden to output layer
 
   def forward(self, X):
+    # print 'NN.n()'
     #Reference
     self.z = np.dot(X, self.W1) # dot product of X (input) and first set of 3x2 weights
     self.z2 = self.sigmoid(self.z) # activation function
@@ -42,10 +44,3 @@ class Neural_Network(object):
   def sigmoid(self, s):
     # activation function
     return 1/(1+np.exp(-s))
-
-  def sigmoidPrime(self, s):
-    #derivative of sigmoid
-    return s * (1 - s)
-
-  def train(self, X, y):
-    o = self.forward(X)
