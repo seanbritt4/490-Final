@@ -25,25 +25,25 @@ WATER_MODIFIER = 0.01
 NEAR_WATER_GROWTH = 1.4
 
 #array of tile objects
-tilemap = [[0 for x in range(MAPWIDTH)] for y in range(MAPHEIGHT)]
-tilemapSave = [[0 for x in range(MAPWIDTH)] for y in range(MAPHEIGHT)]
+tilemap = []        # [[0 for x in range(MAPWIDTH)] for y in range(MAPHEIGHT)]
+tilemap_save = []    # [[0 for x in range(MAPWIDTH)] for y in range(MAPHEIGHT)]
+#tilemap_simple: 2d list of integers: 0 = ground, 1 = water, 2 = occ_tile
+# tilemap_simple = [[0 for x in range(MAPWIDTH)] for y in range(MAPHEIGHT)]
 
-CIVS = []
+COLS = []
 
 #initialize font
 pygame.font.init()
 font = pygame.font.SysFont('Arial', 30)
 textsurface = font.render(' ', False, (255,255,255))
 
-def splitPopulation(c):
-    global tilemap
+def splitPopulation(c, t):
+    global tilemap, MAPWIDTH, MAPHEIGHT
 
-    print 'f.sP(): ', c,
-    print c.occupied_tiles
     tried = [0, 0, 0, 0]
-    dirX = 0
-    dirY = 0
-    # if(tilemap[x][y].tile_type == 'occupied' and tilemap[x][y].alive == True):
+    dir_x = 0
+    dir_y = 0
+
     for tile in c.occupied_tiles:
         sc = random.uniform(0.0, 1.0)
         if sc >= c.split_chance:
@@ -58,49 +58,53 @@ def splitPopulation(c):
                         tried[direction] = 1
                         success = True
                         if(direction == 0):
-                            dirY = 1
-                            dirX = 0
+                            dir_y = 1
+                            dir_x = 0
                         if(direction == 1):
-                            dirX = 1
-                            dirY = 0
+                            dir_x = 1
+                            dir_y = 0
                         if(direction == 2):
-                            dirY = -1
-                            dirX = 0
+                            dir_y = -1
+                            dir_x = 0
                         if(direction == 3):
-                            dirX = -1
-                            dirY = 0
-                #if(x > 0 and x < MAPWIDTH-1 and y > 0 and y < MAPHEIGHT -1):
-                newX = x+dirX
-                newY = y+dirY
-                if(x+dirX < 0):
-                    newX = MAPWIDTH -1
-                if(x+dirX > MAPWIDTH-1):
-                    newX = 0
-                if(y+dirY < 0):
-                    newY = MAPHEIGHT -1
-                if(y+dirY > MAPHEIGHT-1):
-                    newY = 0
-                if(tilemap[newX][newY].tile_type == 'ground'):
-                    newTile = cluster.Occ_Tile()
-                    newTile.resources = tilemap[newX][newY].resources
-                    newTile.pop = tilemap[x][y].pop / 2.0
-                    newColor = tilemap[x][y].civColor
-                    newTile.color = (newColor[0]*newTile.pop, newColor[1]*newTile.pop, newColor[2]*newTile.pop)
-                    newTile.civColor = tilemap[x][y].civColor
-                    newTile.consumption_rate = tilemap[x][y].consumption_rate
-                    newTile.growth_rate = tilemap[x][y].growth_rate / 2.0
-                    newTile.resource_growth_rate = 0
-                    newTile.alive = True
-                    tilemap[newX][newY] = newTile
+                            dir_x = -1
+                            dir_y = 0
+                if(x > 0 and x < MAPWIDTH-1 and y > 0 and y < MAPHEIGHT -1):
+                    new_x = x+dir_x
+                    new_y = y+dir_y
+                    # print new_x, new_y
+                    if(x+dir_x < 0):
+                        new_x = MAPWIDTH -1
+                    if(x+dir_x > MAPWIDTH-1):
+                        new_x = 0
+                    if(y+dir_y < 0):
+                        new_y = MAPHEIGHT -1
+                    if(y+dir_y > MAPHEIGHT-1):
+                        new_y = 0
+                    if(t[new_x][new_y].tile_type == 'ground'):
+                        new_tile = Colony.Occ_Tile()
+                        new_tile.resources = t[new_x][new_y].resources
+                        new_tile.pop = t[x][y].pop / 2.0
+                        new_color = t[x][y].col_color
+                        new_tile.color = (new_color[0]*new_tile.pop, new_color[1]*new_tile.pop, new_color[2]*new_tile.pop)
+                        new_tile.col_color = t[x][y].col_color
+                        new_tile.consumption_rate = t[x][y].consumption_rate
+                        new_tile.growth_rate = t[x][y].growth_rate / 2.0
+                        new_tile.resource_growth_rate = 0
+                        new_tile.alive = True
+                        new_tile.coordinates = [new_x, new_y]
+                        t[new_x][new_y] = new_tile
 
-                    tilemap[x][y].pop /= 2.0
-                    tilemap[x][y].growth_rate /= 2.0
-                    p = tilemap[x][y].pop
-                    tilemap[x][y].color = (newColor[0]*p, newColor[1]*p, newColor[2]*p)
-                    child = tilemap[newX][newY]
-                    parent = tilemap[x][y]
-                    break
+                        t[x][y].pop /= 2.0
+                        t[x][y].growth_rate /= 2.0
+                        p = t[x][y].pop
+                        t[x][y].color = (new_color[0]*p, new_color[1]*p, new_color[2]*p)
+                        child = t[new_x][new_y]
+                        parent = t[x][y]
+                        c.occupied_tiles.append(child)
+                        break
 
+    pass    # end splitPopulation
 
 def fixMatrix(matrix):
     newMatrix = [[0 for y in range(MAPHEIGHT)] for x in range(MAPWIDTH)]
@@ -150,6 +154,8 @@ def initWater(tilemap):
                                     x += xMod
                                     y += plusOrMinus1
                                     tilemap[x][y] = Water_Tile()
+                                    # print 'iW: water tile set'
+                                    tilemap_simple = 1
 
 def initResources(tilemap):
     #initilize starting point
@@ -336,11 +342,11 @@ def initColonies(t):
     for p in range(0, 4):
         successful = False
         while(successful == False):
-            civ = Colony.Colony()
+            c = Colony.Colony()
             x = random.randint(0, MAPWIDTH-1)
             y = random.randint(0, MAPHEIGHT-1)
-            # civ.map_location = [x,y] #do we want random positions everytime?
-            if(t[x][y].tile_type != 'water'):
+            c.coordinates = [x,y]
+            if ((t[x][y].tile_type != 'water') and (t[x][y].tile_type != 'occupied')):
                 newTile = Colony.Occ_Tile()
                 newTile.tile_type = 'occupied'
                 if(p == 0):
@@ -359,21 +365,22 @@ def initColonies(t):
                 newTile.alive = True
                 newTile.resource_growth_rate = 0
                 newTile.coordinates = [x, y]
-                civ.occupied_tiles.append(newTile)
                 t[x][y] = newTile
+                c.occupied_tiles.append(newTile)
 
                 successful = True
-        CIVS.append(civ)
-
+        COLS.append(c)
 
 def main():
-    global MAPHEIGHT, MAPWIDTH, TILESIZE, tilemap, tilemapSave, textsurface, font, CIVS
-
+    global MAPHEIGHT, MAPWIDTH, TILESIZE, tilemap, tilemap_save, textsurface, font, COLS
     #initialize tilemap
     for y in range(MAPHEIGHT):
+        a = []
         for x in range(MAPWIDTH):
             tile = Ground_Tile()
-            tilemap[y][x] = tile
+            # tilemap[y][x] = tile
+            a.append(tile)
+        tilemap.append(a)
 
     fixMatrix(tilemap)
     initResources(tilemap)
@@ -385,7 +392,7 @@ def main():
     DISPLAYSURF = pygame.display.set_mode((MAPWIDTH*TILESIZE, MAPHEIGHT*TILESIZE))
 
     #allow map to be reinitialized with the 'r' key, hit enter to start and 'lock' the map
-    tilemapSave = tilemap
+    tilemap_save = tilemap
     reinit = 0
     while(reinit == 0):
         for column in range(MAPWIDTH):
@@ -411,47 +418,57 @@ def main():
         #save the tilemap for later iterations
         if(pygame.key.get_pressed()[pygame.K_RETURN] != 0):
             reinit = 1
-            tilemapSave = copy.deepcopy(tilemap)
+            tilemap_save = copy.deepcopy(tilemap)
 
             initColonies(tilemap)
 
-
     '''
-|~~~\/~~\/~~~\/~~\/~~~|~~~\/~~\/~~~\/~~\/~~~|~~~\/~~\/~~~\/~~\/~~~|
-| /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ |
-| \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ |
- \ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/
- /\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \
-| /\/ /\___|___/\/ /\___/\/ /\___|___/\/ /\___/\/ /\___|___/\/ /\ |
-| \/ /\/   |   \/ /\/   \/ /\/   |   \/ /\/   \/ /\/   |   \/ /\/ |
- \ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/
- /\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \
-| /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ |
-| \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ |
-|___/\__/\___/\__/\___|___/\__/\___/\__/\___|___/\__/\___/\__/\___|
+        |~~~\/~~\/~~~\/~~\/~~~|~~~\/~~\/~~~\/~~\/~~~|~~~\/~~\/~~~\/~~\/~~~|
+        | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ |
+        | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ |
+        \ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/
+        /\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \
+        | /\/ /\___|___/\/ /\___/\/ /\___|___/\/ /\___/\/ /\___|___/\/ /\ |
+        | \/ /\/   |   \/ /\/   \/ /\/   |   \/ /\/   \/ /\/   |   \/ /\/ |
+        \ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/
+        /\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \
+        | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ |
+        | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ |
+        |___/\__/\___/\__/\___|___/\__/\___/\__/\___|___/\__/\___/\__/\___|
     '''
 
     generations = 1
-    max_time_steps = 25 #change as needed
+    max_time_steps = 50 #change as needed
 #
     displayTile = (-1, -1) #what tile to display information on
 
-    # while True:     #tracks generations
-    while generations <= 3: # dbug
-        print "---------------start generation---------------"
+    while True:     #tracks generations
+    # while generations <= 1: # dbug
+        print "---------------start generation", generations, "---------------"
+        # initColonies(tilemap)
+        print "beginning len():", len(COLS)
+        print 'beg. loop: [res,  pop,  c_r,  g_r,  rgr]'
+        for a in COLS:
+            print "beg. loop:", a.X
+
         timestep = 0
+        print '======================================================'
         #tracks timesteps in each generation
         for timestep in range(0, max_time_steps):
+            #end loop early if only one colony is still alive
+            surviving = 0
+            for a in COLS:
+                if a.alive:
+                    surviving += 1
+            # if surviving == 1:
+            #     print 'f.m() breaking'
+            #     break
+
+            # print '---------', tilemap[20][30]#.tile_type
             updateResources()
 
-            #draw map (and split, for testing purposes DELETE THAT LATER of course :)
-            # for column in range(MAPWIDTH):
-            #     for row in range(MAPHEIGHT):
-            #         if(tilemap[column][row].tile_type == 'occupied' and tilemap[column][row].alive == True):
-            #             splitPopulation(column, row)
-
-            for  i in range(0, len(CIVS)):
-                CIVS[i].takeTurn()
+            for  i in range(0, len(COLS)):
+                COLS[i].takeTurn(tilemap)
 
             for column in range(MAPWIDTH):
                 for row in range(MAPHEIGHT):
@@ -471,7 +488,7 @@ def main():
 
             #reset the map if r is pressed
             if(pygame.key.get_pressed()[pygame.K_r] != 0):
-                tilemap = copy.deepcopy(tilemapSave)
+                tilemap = copy.deepcopy(tilemap_save)
 
             #display the resources of a clicked-tile on the UI
             if displayTile != (-1, -1):
@@ -490,21 +507,27 @@ def main():
 
             '''possibly save run & computation time?'''
             # if (generations % 10) == 0: # update display every 10 generations
-            if (timestep % 1) == 0:  #update display every 10 timesteps
-                pygame.display.update()
-            # print len(CIVS[0].occupied_tiles)
-            # raw_input()
+            # if (timestep % 2) == 0 and (generations % 2) == 1:  #update display every 10 timesteps
+            # if False:
+            pygame.display.update()
             pass #end for loop
 
-        tilemap = copy.deepcopy(tilemapSave)
-        generations += 1
-        for a in CIVS:
-            print a.X
+        tilemap = copy.deepcopy(tilemap_save)
+        # for a in COLS:
+        #     print a.X
 
-        print "-----------------end generation---------------"
-        CIVS = Colony.findFittest(CIVS)
-        for a in CIVS:
-            print a.X
+        print "-----------------end generation {}---------------".format(generations)
+        raw_input('Enter to continue')
+        COLS = copy.deepcopy(Colony.findFittest(COLS, tilemap))
+        print len(COLS)
+        for a in COLS:
+            print 'a.occ_tiles:', a.occupied_tiles
+            print 'a.pop:', a.pop
+            # print 'a.X:', a.X
+
+        print '==============================================='
+
+        generations += 1
         pass #end while loop
 pass #end main function
 
