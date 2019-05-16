@@ -37,46 +37,51 @@ class Colony():
             for tile in self.occupied_tiles:
                 if tile.alive:
                     # tile.growth_rate = decision[0]
-                    tile.consumption_rate = decision[0]
-                    self.X[2] = decision[0]
+                    # tile.consumption_rate = decision[0]
+                    # self.X[2] = decision[0]
                     splitPopulation(self, tile, t)
 
-            self.updateX(t)
+            return self.updateX(t, decision[0])
 
-    def updateX(self, t):
-        res, pop, c_r, g_r, rgr = 0.0, 0.0, 0.0, 0.0, 0.0
+    def updateX(self, t, c_r):
+        res, pop, g_r, rgr = 0.0, 0.0, 0.0, 0.0
         for i in self.occupied_tiles:
             res += i.resources
             pop += i.pop
-            c_r += i.consumption_rate
+            # c_r += i.consumption_rate
             g_r += i.growth_rate
             rgr += i.resource_growth_rate
 
-        if pop == 0.0:
+        if self.pop <= 0.0001:
+            print 'ded'
             self.alive = False
             self.col_color = (225,225,225)
         else:
             a = [0 for x in range(5)]
-            a[0] = res/len(self.occupied_tiles)
-            a[1] = pop/len(self.occupied_tiles)
-            a[2] = c_r/len(self.occupied_tiles)
-            a[3] = g_r/len(self.occupied_tiles)
-            a[4] = rgr/len(self.occupied_tiles)
+
+            a[0] = res #(res/len(self.occupied_tiles)) * 10
+            a[2] = c_r #(c_r/len(self.occupied_tiles)) * 10
+            a[3] = g_r #(g_r/len(self.occupied_tiles)) * 10  #/ a[0]) -0.5)
+            a[1] = pop #(pop/len(self.occupied_tiles)) * 10  #/ a[3]
+            a[4] = rgr #(rgr/len(self.occupied_tiles)) * 10  #/ a[1]
 
             for i in range(len(self.X)):
-                if self.X[i] > 1.0:
-                    self.X[i] = 1.0
-                elif self.X[i] < 0.0:
-                    self.X[i] = 0.0
+                if a[i] > 1.0:
+                    a[i] = 1.0
+                elif a[i] < 0.0:
+                    a[i] = 0.0
 
             self.resources = round(a[0], 4)
             self.population = round(a[1], 4)
             self.consumption_rate = round(a[2], 4)
             self.growth_rate = round(a[3], 4)
             self.resource_growth_rate = round(a[4], 4)
+            # self.col_color =
 
-            # self.X = [a[0], a[1], a[2], a[3], a[4]]
-            self.X = [self.resources, self.population, self.consumption_rate, self.growth_rate, self.resource_growth_rate]
+            self.X = [a[0], a[1], a[2], a[3], a[4]]
+            X = [self.resources, self.population, self.consumption_rate, self.growth_rate, self.resource_growth_rate]
+            # print 'C.uX() X: {}'.format(X)
+            return X
 
 
 def findFittest(colonies, t):
@@ -97,7 +102,6 @@ def findFittest(colonies, t):
                 deadCells[index] += 1
         index += 1
 
-
     if len(contenders) >= 2:
         max_pop = 0.0
         index = 0
@@ -115,8 +119,9 @@ def findFittest(colonies, t):
 def genChildren(parent, t):
     global tilemap
     c = [parent]
-    while len(c) < 4:
-        # print parent
+    colors = [(225,0,0),(225,225,0),(225,0,225),(0,225,225)]
+    c[0].col_color = colors[0]
+    for a in range(3):
         child_X = copy.deepcopy(parent.X)
         child = Colony()
         tile = Occ_Tile()
@@ -127,7 +132,7 @@ def genChildren(parent, t):
             variance = r.uniform(-.20, .20)
 
             if child_X[i] >= 1.0:
-               child_.X[i] = 1.0 - abs(variance)
+               child_X[i] = 1.0 - abs(variance)
             elif child_X[i] <= 0.0:
                 child_X[i] = 0.0 + abs(variance)
             else:
@@ -142,6 +147,7 @@ def genChildren(parent, t):
 
         child.X = child_X
         c.append(child)
+        c[a+1].col_color = colors[a+1]
 
     return c
 

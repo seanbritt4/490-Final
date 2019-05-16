@@ -3,7 +3,7 @@ import numpy as np
 class Neural_Network(object):
   def __init__(self):
     self.inputSize = 5
-    self.hiddenSize1 = 5
+    self.hiddenSize1 = 6
     self.hiddenSize2 = 4
     self.hiddenSize3 = 5
     self.outputSize = 2

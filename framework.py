@@ -37,17 +37,13 @@ textsurface = font.render(' ', False, (255,255,255))
 
 def splitPopulation(c, tile, t):
     global tilemap, MAPWIDTH, MAPHEIGHT
-
     tried = [0, 0, 0, 0]
     dir_x = 0
     dir_y = 0
-
     children = []
-
-    # for tile in c.occupied_tiles:
     sc = random.uniform(0.0, 1.0)
+
     if .80 <= c.split_chance and tile.alive == True:
-    # if sc >= c.split_chance and tile.alive == True:
         x, y = tile.coordinates[0], tile.coordinates[1]
         for w in range(4):
             success = False
@@ -106,7 +102,7 @@ def splitPopulation(c, tile, t):
                     break
 
     c.occupied_tiles.extend(children)
-    pass    # end splitPopulation
+pass    # end splitPopulation
 
 def fixMatrix(matrix):
     newMatrix = [[0 for y in range(MAPHEIGHT)] for x in range(MAPWIDTH)]
@@ -426,41 +422,25 @@ def main():
             tilemap_save = copy.deepcopy(tilemap)
 
             initColonies(tilemap)
-
-    '''
-        |~~~\/~~\/~~~\/~~\/~~~|~~~\/~~\/~~~\/~~\/~~~|~~~\/~~\/~~~\/~~\/~~~|
-        | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ |
-        | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ |
-        \ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/
-        /\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \
-        | /\/ /\___|___/\/ /\___/\/ /\___|___/\/ /\___/\/ /\___|___/\/ /\ |
-        | \/ /\/   |   \/ /\/   \/ /\/   |   \/ /\/   \/ /\/   |   \/ /\/ |
-        \ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/~\ \/\ \/\ | /\ \/\ \/
-        /\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \_/\ \/\ \/ | \/\ \/\ \
-        | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ | /\/ /\/ /~\/ /\/ /\ |
-        | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ | \/ /\/ /\_/ /\/ /\/ |
-        |___/\__/\___/\__/\___|___/\__/\___/\__/\___|___/\__/\___/\__/\___|
-    '''
+    pass #end while loop
 
     generations = 1
-    max_time_steps = 15     # change as needed
-#
+    max_time_steps = 50     # change as needed
+
     displayTile = (-1, -1) #what tile to display information on
 
     while True:     #tracks generations
-    # while generations <= 1: # dbug
         print "---------------start generation", generations, "---------------"
-        # initColonies(tilemap)
-        print "beginning len():", len(COLS)
+        print "beginning len():{}".format(len(COLS))
         print 'beg. loop: [res,  pop,  c_r,  g_r,  rgr]'
         for a in COLS:
-            print "beg. loop:", a.X
+            print "beg. loop: {} {}".format(a.X, a.consumption_rate)
 
         timestep = 0
         '''==================================================='''
         #tracks timesteps in each generation
         for timestep in range(1, max_time_steps+1):
-            #end loop early if only one colony is still alive
+            # end loop early if only one colony is still alive
             surviving = 0
             for a in COLS:
                 if a.alive:
@@ -468,8 +448,9 @@ def main():
 
             updateResources()
 
-            for  i in range(0, len(COLS)):
-                COLS[i].takeTurn(tilemap)
+            for i in range(0, len(COLS)):
+                if COLS[i].alive:
+                    COLS[i].X = COLS[i].takeTurn(tilemap)
 
 
             for column in range(MAPWIDTH):
@@ -511,20 +492,17 @@ def main():
             textsurface = font.render("Generation: " + str(generations) + "    Time Steps: " + str(timestep), False, (255,255,255))
             DISPLAYSURF.blit(textsurface,(0, MAPHEIGHT*TILESIZE - 35))
 
+            print '==============================================='
             for i in range(len(COLS)):
+                print 'f.m() COLS[i]: {}'.format(COLS[i])
                 print 'f.m() COLS[i].X: {}'.format(COLS[i].X)
             print
 
             pygame.display.update()
             pass #end for loop
 
-        # print '==============================================='
         tilemap = copy.deepcopy(tilemap_save)
         COLS = copy.deepcopy(Colony.findFittest(COLS, tilemap))
-        # print len(COLS)
-
-        # print "-----------------end generation {}----------------\n".format(generations)
-        # initColonies(tilemap)
         generations += 1
         # raw_input('Enter to continue') # pause after
         pass #end while loop

@@ -1,14 +1,9 @@
 import random
 
 class Tile():
-    resources = 0
     def __init__(self):
         self.tile_type = 'tile'
         self.color = (0, 0, 0)
-
-    def find_color(self):
-#        print self.tile_type
-        pass
 
 class Ground_Tile(Tile):
     def __init__(self):
@@ -22,9 +17,6 @@ class Ground_Tile(Tile):
         self.col_color = (0, 0, 0)
         self.alive = True #Set them alive initially, because it's inconsequential, and saves time :)
         self.resource_growth_rate = 0
-
-    def print_color(self):
-        print self.color, " ", self.resources
 
 class Water_Tile(Tile):
     def __init__(self):
