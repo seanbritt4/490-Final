@@ -28,6 +28,7 @@ class Colony():
         self.split_chance = 0.0
 
     def takeTurn(self, t):
+
         if self.alive:
             self.rounds_alive += 1
             decision = self.NN.forward(self.X)
@@ -35,6 +36,7 @@ class Colony():
             self.split_chance = decision[1]
             for tile in self.occupied_tiles:
                 if tile.alive:
+                    # tile.growth_rate = decision[0]
                     tile.consumption_rate = decision[0]
                     self.X[2] = decision[0]
                     splitPopulation(self, tile, t)
@@ -42,21 +44,39 @@ class Colony():
             self.updateX(t)
 
     def updateX(self, t):
-        res, pop, c_r, rgr = 0.0, 0.0, 0.0, 0.0
+        res, pop, c_r, g_r, rgr = 0.0, 0.0, 0.0, 0.0, 0.0
         for i in self.occupied_tiles:
             res += i.resources
             pop += i.pop
             c_r += i.consumption_rate
+            g_r += i.growth_rate
             rgr += i.resource_growth_rate
 
         if pop == 0.0:
             self.alive = False
             self.col_color = (225,225,225)
         else:
-            self.X[0] = round(res/len(self.occupied_tiles), 4)
-            self.X[1] = round(pop/len(self.occupied_tiles), 4)
-            self.X[2] = round(c_r/len(self.occupied_tiles), 4)
-            self.X[4] = round(rgr/len(self.occupied_tiles), 4)
+            a = [0 for x in range(5)]
+            a[0] = res/len(self.occupied_tiles)
+            a[1] = pop/len(self.occupied_tiles)
+            a[2] = c_r/len(self.occupied_tiles)
+            a[3] = g_r/len(self.occupied_tiles)
+            a[4] = rgr/len(self.occupied_tiles)
+
+            for i in range(len(self.X)):
+                if self.X[i] > 1.0:
+                    self.X[i] = 1.0
+                elif self.X[i] < 0.0:
+                    self.X[i] = 0.0
+
+            self.resources = round(a[0], 4)
+            self.population = round(a[1], 4)
+            self.consumption_rate = round(a[2], 4)
+            self.growth_rate = round(a[3], 4)
+            self.resource_growth_rate = round(a[4], 4)
+
+            # self.X = [a[0], a[1], a[2], a[3], a[4]]
+            self.X = [self.resources, self.population, self.consumption_rate, self.growth_rate, self.resource_growth_rate]
 
 
 def findFittest(colonies, t):
@@ -87,9 +107,9 @@ def findFittest(colonies, t):
                 fittest = i
             index += 1
 
-    print 'C.fF() fittest.c_r: {}'.format(fittest.X[2])
+    # print 'C.fF() fittest.g_r: {}'.format(fittest.X[3])
     c = genChildren(fittest, t)
-    # print 'C.fF() c: {}'.format(len(c))
+    print 'C.fF() c: {}'.format(len(c))
     return c
 
 def genChildren(parent, t):

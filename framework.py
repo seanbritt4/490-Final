@@ -471,6 +471,7 @@ def main():
             for  i in range(0, len(COLS)):
                 COLS[i].takeTurn(tilemap)
 
+
             for column in range(MAPWIDTH):
                 for row in range(MAPHEIGHT):
                    pygame.draw.rect(DISPLAYSURF, tilemap[column][row].color, (column*TILESIZE, row*TILESIZE, TILESIZE, TILESIZE))
@@ -510,7 +511,10 @@ def main():
             textsurface = font.render("Generation: " + str(generations) + "    Time Steps: " + str(timestep), False, (255,255,255))
             DISPLAYSURF.blit(textsurface,(0, MAPHEIGHT*TILESIZE - 35))
 
-            '''possibly save run & computation time?'''
+            for i in range(len(COLS)):
+                print 'f.m() COLS[i].X: {}'.format(COLS[i].X)
+            print
+
             pygame.display.update()
             pass #end for loop
 
@@ -519,7 +523,7 @@ def main():
         COLS = copy.deepcopy(Colony.findFittest(COLS, tilemap))
         # print len(COLS)
 
-        print "-----------------end generation {}----------------\n".format(generations)
+        # print "-----------------end generation {}----------------\n".format(generations)
         # initColonies(tilemap)
         generations += 1
         # raw_input('Enter to continue') # pause after
