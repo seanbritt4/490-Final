@@ -3,7 +3,6 @@ import tiles
 import copy
 import random as r
 import nn
-import numpy as np
 
 class Colony():
     def __init__(self):
@@ -14,7 +13,7 @@ class Colony():
         self.col_color = (0, 0, 0)  #color of their colony
 
         self.resources = round(r.uniform(0.0, 0.99), 2)         # available resources
-        self.pop = round(r.uniform(0.50, 0.66), 2)              # cluster population
+        self.pop = round(r.uniform(0.33, 0.66), 2)              # cluster population
         self.consumption_rate = round(r.uniform(0.25, 0.75), 2) # resource consumption rate
         self.growth_rate = round(r.uniform(0.25, 0.75), 2)      # population growth rate
         self.resource_growth_rate = 0.0                         # resource growth rate
@@ -35,7 +34,7 @@ class Colony():
             if decision == 'split':
                 # print 'split'
                 splitPopulation(self, t)
-                self.consumption_rate *= .5 #where do we do this? adjust consumption rate, population, etc? --- It's all done in the updateResources function. Currently it doesn't change the consumption_rate, but you can do whatever you want here because it'll change on the next turn anyway I think, because of the line below. Let me know if that didn't answer your question lol, I think that's what you were asking. PS: Does your text editor make long lines hang down into the next line :P gottem
+                self.consumption_rate *= .5 #where do we do this? adjust consumption rate, population, etc?
             else:                           # must be 'consume'
                 self.consumption_rate = decision
             self.updatePop()
@@ -70,25 +69,14 @@ def findFittest(colonies, t):
         if i.rounds_alive >= max_rounds:
             contenders.append(i)
 
-    #this is an array for holding dead cells in each of the colonies
-    deadCells = [0 for x in range(len(contenders))]
-    index = 0
-    for colony in contenders:    
-        for tile in range(len(colony.occupied_tiles)):
-            if colony.occupied_tiles[tile].alive == False:
-                deadCells[index] += 1
-        index += 1
-
-    
     # print len(contenders)
     if len(contenders) >= 2:
         max_pop = 0.0
-        index = 0
         for i in contenders:
-            if i.pop - deadCells[index] > max_pop:
+            if i.pop > max_pop:
                 max_pop = i.pop
                 fittest = i
-            index += 1
+
     print "fittest {}: {} [pop: {}]".format(fittest.col_color, fittest.X, fittest.pop)
     c = genChildren(fittest, t)
     print 'C.fF(): len c', len(c)
@@ -105,7 +93,7 @@ def genChildren(parent, t):
         child.occupied_tiles.append(tile)
 
         for i in range(5):
-            variance = r.uniform(-.05, .05)
+            variance = r.uniform(-.25, .25)
 
             if child_X[i] >= 1.0:
                child_.X[i] = 1.0 - abs(variance)
