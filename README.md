@@ -1,8 +1,10 @@
 # 490-Final
 Final project for COSC 490: Special Topics: Artificial Intelligence
 
+To run simply download and run 'framework.py'
+
 CONCEPT:
-  We wanted to create a simplified, zero-player game in the vein of Sid Meyer's Civilization Series, Dwarf Fortress, etc.
+  We wanted to create a zero-player game in the vein of Sid Meyer's Civilization Series, Dwarf Fortress, etc.
   We imagined a matrix which represents the game world, implemented as a list of Tile Class objects. Each tile would have one of the following
 descriptors: "ground", "water", "occupied", a set resource value, and a set resource_growth rate.
   Occupying this map are Cluster objects which have a populationg value, resource consumption rate, color, and neural network.
