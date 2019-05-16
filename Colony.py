@@ -3,6 +3,7 @@ import tiles
 import copy
 import random as r
 import nn
+import numpy as np
 
 class Colony():
     def __init__(self):
@@ -13,7 +14,7 @@ class Colony():
         self.col_color = (0, 0, 0)  #color of their colony
 
         self.resources = round(r.uniform(0.0, 0.99), 2)         # available resources
-        self.pop = round(r.uniform(0.33, 0.66), 2)              # cluster population
+        self.pop = round(r.uniform(0.50, 0.66), 2)              # cluster population
         self.consumption_rate = round(r.uniform(0.25, 0.75), 2) # resource consumption rate
         self.growth_rate = round(r.uniform(0.25, 0.75), 2)      # population growth rate
         self.resource_growth_rate = 0.0                         # resource growth rate
@@ -26,39 +27,37 @@ class Colony():
         self.con_chance = 0.0
         self.split_chance = 0.0
 
-
     def takeTurn(self, t):
-        decision = self.makeDecision()
         if self.alive:
             self.rounds_alive += 1
-            if decision == 'split':
-                # print 'split'
-                splitPopulation(self, t)
-                self.consumption_rate *= .5 #where do we do this? adjust consumption rate, population, etc?
-            else:                           # must be 'consume'
-                self.consumption_rate = decision
-            self.updatePop()
+            decision = self.NN.forward(self.X)
+            self.con_chance = decision[0]
+            self.split_chance = decision[1]
+            for tile in self.occupied_tiles:
+                if tile.alive:
+                    tile.consumption_rate = decision[0]
+                    self.X[2] = decision[0]
+                    splitPopulation(self, tile, t)
 
+            self.updateX(t)
 
-    def makeDecision(self):
-        decision = self.NN.forward(self.X)
-        self.con_chance = decision[0]
-        self.split_chance = decision[1]
-        if self.con_chance >= self.split_chance:
-            return 'consume'
-        else:
-            return 'split'
-
-    def updatePop(self):
-        pop = 0.0
+    def updateX(self, t):
+        res, pop, c_r, rgr = 0.0, 0.0, 0.0, 0.0
         for i in self.occupied_tiles:
+            res += i.resources
             pop += i.pop
+            c_r += i.consumption_rate
+            rgr += i.resource_growth_rate
 
         if pop == 0.0:
             self.alive = False
             self.col_color = (225,225,225)
         else:
-            self.pop = pop/len(self.occupied_tiles)
+            self.X[0] = round(res/len(self.occupied_tiles), 4)
+            self.X[1] = round(pop/len(self.occupied_tiles), 4)
+            self.X[2] = round(c_r/len(self.occupied_tiles), 4)
+            self.X[4] = round(rgr/len(self.occupied_tiles), 4)
+
 
 def findFittest(colonies, t):
     contenders = []
@@ -69,23 +68,35 @@ def findFittest(colonies, t):
         if i.rounds_alive >= max_rounds:
             contenders.append(i)
 
-    # print len(contenders)
+    #this is an array for holding dead cells in each of the colonies
+    deadCells = [0 for x in range(len(contenders))]
+    index = 0
+    for colony in contenders:
+        for tile in range(len(colony.occupied_tiles)):
+            if colony.occupied_tiles[tile].alive == False:
+                deadCells[index] += 1
+        index += 1
+
+
     if len(contenders) >= 2:
         max_pop = 0.0
+        index = 0
         for i in contenders:
-            if i.pop > max_pop:
+            if i.pop - deadCells[index] > max_pop:
                 max_pop = i.pop
                 fittest = i
+            index += 1
 
-    print "fittest {}: {} [pop: {}]".format(fittest.col_color, fittest.X, fittest.pop)
+    print 'C.fF() fittest.c_r: {}'.format(fittest.X[2])
     c = genChildren(fittest, t)
-    print 'C.fF(): len c', len(c)
+    # print 'C.fF() c: {}'.format(len(c))
     return c
 
 def genChildren(parent, t):
     global tilemap
     c = [parent]
     while len(c) < 4:
+        # print parent
         child_X = copy.deepcopy(parent.X)
         child = Colony()
         tile = Occ_Tile()
@@ -93,7 +104,7 @@ def genChildren(parent, t):
         child.occupied_tiles.append(tile)
 
         for i in range(5):
-            variance = r.uniform(-.25, .25)
+            variance = r.uniform(-.20, .20)
 
             if child_X[i] >= 1.0:
                child_.X[i] = 1.0 - abs(variance)
@@ -108,12 +119,10 @@ def genChildren(parent, t):
                 child_X[i] = 1.0
 
             child_X[i] = round(child_X[i], 4)
-        child.X = child_X
 
-        print 'C.gC(): child.occ_tiles:', child.occupied_tiles
+        child.X = child_X
         c.append(child)
 
-    print 'C.gC(), len c: ', len(c)
     return c
 
 
@@ -136,8 +145,8 @@ class Occ_Tile(Colony, tiles.Ground_Tile):
         while(successful == False):
             x = r.randint(0, MAPWIDTH-1)
             y = r.randint(0, MAPHEIGHT-1)
-            print 'flag'
             if(t[x][y].tile_type != 'water'):
+                self.resources = t[x][y].resources
                 self.color = (self.pop*self.col_color[0], self.pop*self.col_color[1], self.pop*self.col_color[2])
                 self.alive = True
                 self.coordinates = [x, y]
