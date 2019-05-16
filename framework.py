@@ -47,8 +47,9 @@ def splitPopulation(c, t):
     children = []
 
     for tile in c.occupied_tiles:
-        sc = random.uniform(0.0, 1.0)
-        if sc >= c.split_chance and tile.alive == True:
+        # sc = random.uniform(0.5, 1.0)
+        # if sc >= c.split_chance and tile.alive == True:
+        if tile.pop >= c.split_chance and tile.alive == True:
             x, y = tile.coordinates[0], tile.coordinates[1]
             for w in range(4):
                 success = False
@@ -74,7 +75,7 @@ def splitPopulation(c, t):
                 if(x >= 0 and x <= MAPWIDTH-1 and y >= 0 and y <= MAPHEIGHT -1):
                     new_x = x+dir_x
                     new_y = y+dir_y
-                    
+
                     if(x+dir_x < 0):
                         new_x = MAPWIDTH -1
                     if(x+dir_x > MAPWIDTH-1):
@@ -105,7 +106,7 @@ def splitPopulation(c, t):
                         parent = t[x][y]
                         children.append(child)
                         break
-    
+
     c.occupied_tiles.extend(children)
     pass    # end splitPopulation
 
@@ -164,7 +165,7 @@ def initResources(tilemap):
     #initilize starting point
     curX = 0
     curY = 0
-    tilemap[curX][curY].resources = round(random.uniform(0.0, 0.05), 2)
+    tilemap[curX][curY].resources = round(random.uniform(0.25, 0.3), 2)
     r = tilemap[curX][curY].resources
     tilemap[curX][curY].color = (0, 255*r, 0)
     curY += 1
@@ -189,8 +190,8 @@ def initResources(tilemap):
             tilemap[curX][curY].resources = avgRes + round(random.uniform(RESOURCE_MODIFIER*-1, RESOURCE_MODIFIER), 2)
             if(tilemap[curX][curY].resources > 1):
                 tilemap[curX][curY].resources = 1
-            if(tilemap[curX][curY].resources < 0):
-                tilemap[curX][curY].resources = 0
+            if(tilemap[curX][curY].resources < .15):
+                tilemap[curX][curY].resources = .15
             r = tilemap[curX][curY].resources
             tilemap[curX][curY].color = (0, 255.0*r, 0)
             curY += 1
@@ -345,6 +346,8 @@ def printTilemap(t):
         print
 
 def initColonies(t):
+    global COLS
+    COLS = COLS[:4]
     for p in range(0, 4):
         successful = False
         while(successful == False):
@@ -450,27 +453,15 @@ def main():
 
     while True:     #tracks generations
     # while generations <= 1: # dbug
-        print "---------------start generation", generations, "---------------"
-        # initColonies(tilemap)
-        print "beginning len():", len(COLS)
-        print 'beg. loop: [res,  pop,  c_r,  g_r,  rgr]'
-        for a in COLS:
-            print "beg. loop:", a.X
+        print "---------------start generation", generations, "--------------------"
+        print '\t      [res,  pop,  c_r,  g_r,  rgr]'
+        for a in range(4):
+            print "beg colonies:", COLS[a].X
 
         timestep = 0
         print '======================================================'
         #tracks timesteps in each generation
-        for timestep in range(0, max_time_steps):
-            #end loop early if only one colony is still alive
-            surviving = 0
-            for a in COLS:
-                if a.alive:
-                    surviving += 1
-            # if surviving == 1:
-            #     print 'f.m() breaking'
-            #     break
-
-            # print '---------', tilemap[20][30]#.tile_type
+        for timestep in range(1, max_time_steps+1):
             updateResources()
             for  i in range(0, len(COLS)):
                 COLS[i].takeTurn(tilemap)
@@ -507,35 +498,24 @@ def main():
                 textsurface = font.render(string + str(round(tilemap[xDT][yDT].pop, 4)), False, (255,255,255))
                 DISPLAYSURF.blit(textsurface,(0, 35))
 
-                string = "Consumption: " 
+                string = "Consumption: "
                 textsurface = font.render(string + str(round(tilemap[xDT][yDT].consumption_rate, 4)), False, (255,255,255))
                 DISPLAYSURF.blit(textsurface,(0,70))
 
             textsurface = font.render("Generation: " + str(generations) + "    Time Steps: " + str(timestep), False, (255,255,255))
             DISPLAYSURF.blit(textsurface,(0, MAPHEIGHT*TILESIZE - 35))
 
-            '''possibly save run & computation time?'''
-            # if (generations % 10) == 0: # update display every 10 generations
-            # if (timestep % 2) == 0 and (generations % 2) == 1:  #update display every 10 timesteps
-            # if False:
             pygame.display.update()
             pass #end for loop
 
         tilemap = copy.deepcopy(tilemap_save)
-        # for a in COLS:
-        #     print a.X
 
-        print "-----------------end generation {}---------------".format(generations)
+
+        # print "---------------end generation {}-----------------------".format(generations)
         COLS = copy.deepcopy(Colony.findFittest(COLS, tilemap))
-        print len(COLS)
-        for a in COLS:
-            print 'a.occ_tiles:', a.occupied_tiles
-            print 'a.pop:', a.pop
-            # print 'a.X:', a.X
-
-        print '==============================================='
         initColonies(tilemap)
         generations += 1
+        print '======================================================\n'
         pass #end while loop
 pass #end main function
 
